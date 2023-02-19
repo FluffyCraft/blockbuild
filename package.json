@@ -1,0 +1,16 @@
+{
+  "type": "module",
+  "name": "blockbuild",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "bin": {
+    "blockb": "dist/cli.js"
+  },
+  "devDependencies": {
+    "@types/node": "^18.14.0"
+  },
+  "dependencies": {
+    "chalk": "^5.2.0",
+    "node-fetch": "^3.3.0"
+  }
+}
