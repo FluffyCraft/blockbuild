@@ -199,8 +199,38 @@ config
 
 import { cli, CLICommand, boolean } from './cliApi.js';
 
-const version = new CLICommand([], [], () => console.log('v0.1.0'));
+const version = new CLICommand(() => console.log('v0.1.0'), 'Returns the current version of BlockBuild.');
+const build = new CLICommand(
+    () => { },
+    'Builds a project.',
+    [
+        {
+            name: 'path',
+            description: 'The path to find the source files.',
+            type: String,
+            defaultValue: '.'
+        },
+        {
+            name: 'outPath',
+            description: 'The path to output the built project.',
+            type: String,
+            defaultValue: 'dist'
+        }
+    ],
+    [
+        {
+            name: 'production',
+            description: 'Build in production mode.',
+            alias: 'p'
+        },
+        {
+            name: 'package',
+            description: 'Package as a .mcaddon file.'
+        }
+    ]
+)
 
 cli({
-    version
+    version,
+    build
 });

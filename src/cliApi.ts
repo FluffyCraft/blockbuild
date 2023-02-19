@@ -67,28 +67,47 @@ type TType = typeof String | typeof boolean | typeof Number;
 interface ICLICommandArg {
     name: string,
     type?: TType,
-    defaultValue?: any
+    defaultValue?: any,
+    description: string
 }
 
 interface ICLICommandFlag {
     name: string,
     alias?: string,
-    type?: TType,
-    defaultValue?: any
+    type?: TType, // default is boolean, to accept any, set it to undefined.
+    defaultValue?: any, // default is false, if you do not want a default value, set it to undefined
+    description: string
 }
 
 interface ICLICommandCallbackFlags {
     [name: string]: unknown
 }
 
+function getNameOfType(type?: TType) {
+    return type ? type.name.toLowerCase() : 'any';
+}
+
+function formatDefaultValue(defaultValue: any, type?: TType) {
+    return type === String ? chalk.green(`"${defaultValue}"`) : chalk.red(defaultValue);
+}
+
 export class CLICommand {
     args;
     flags;
+    description;
     callback;
 
-    constructor(args: ICLICommandArg[], flags: ICLICommandFlag[], callback: (flags: ICLICommandCallbackFlags, ...args: any[]) => void) {
+    constructor(callback: (flags: ICLICommandCallbackFlags, ...args: any[]) => void, description: string, args: ICLICommandArg[] = [], flags: ICLICommandFlag[] = []) {
+        this.flags = flags
+            .sort((a, b) => a.name > b.name ? 1 : -1)
+            .map(arg => {
+                if (!('defaultValue' in arg)) arg.defaultValue = false;
+                if (!('type' in arg)) arg.type = boolean;
+                return arg;
+            });
+
         this.args = args;
-        this.flags = flags;
+        this.description = description;
         this.callback = callback;
     }
 
@@ -107,7 +126,7 @@ export class CLICommand {
 
             const coalescedArg = expectedArg.type ? expectedArg.type(arg) : arg;
 
-            if (Number.isNaN(coalescedArg)) throw `Unexpected type for positional argument ${i}; \`${expectedArg.name}\`. Expected \`${expectedArg.type?.name.toLowerCase()}\`, got \`${typeof arg}\`.`;
+            if (Number.isNaN(coalescedArg)) throw `Unexpected type for positional argument ${i}; \`${expectedArg.name}\`. Expected \`${getNameOfType(expectedArg.type)}\`, got \`${typeof arg}\`.`;
 
             evaluatedArgs.push(coalescedArg);
         }
@@ -126,12 +145,28 @@ export class CLICommand {
 
             const coalescedFlag = expectedFlag.type ? expectedFlag.type(flag) : flag;
 
-            if (Number.isNaN(coalescedFlag)) throw `Unexpected type for flag; \`--${expectedFlag.name}\`${expectedFlag.alias ? ` (\`-${expectedFlag.alias}\`)` : ''}. Expected \`${expectedFlag.type?.name.toLowerCase()}\`, got \`${typeof flag}\`.`;
+            if (Number.isNaN(coalescedFlag)) throw `Unexpected type for flag; \`--${expectedFlag.name}\`${expectedFlag.alias ? ` (\`-${expectedFlag.alias}\`)` : ''}. Expected \`${getNameOfType(expectedFlag.type)}\`, got \`${typeof flag}\`.`;
 
             evaluatedFlags[expectedFlag.name] = coalescedFlag;
         }
 
         this.callback(evaluatedFlags, ...evaluatedArgs);
+    }
+
+    print(name: string) {
+        console.log(`${chalk.blue(name)} - ${this.description}`);
+
+        if (this.args.length) {
+            console.log(`\t${chalk.bold('Positional Arguments:')}`);
+            for (const arg of this.args)
+                console.log(`\t\t${chalk.blue(arg.defaultValue !== undefined ? `[${arg.name}]` : `<${arg.name}>`)}${chalk.green(`: ${getNameOfType(arg.type)}`)} - ${arg.description}${arg.defaultValue !== undefined ? ` (Default: ${formatDefaultValue(arg.defaultValue, arg.type)})` : ''}`);
+        }
+
+        if (this.flags.length) {
+            console.log(`\t${chalk.bold('Flags:')}`);
+            for (const flag of this.flags)
+                console.log(`\t\t${chalk.blue(flag.defaultValue !== undefined ? `[--${flag.name}]` : `<--${flag.name}>`)}${flag.alias ? ` (-${flag.alias})` : ''}${chalk.green(`: ${getNameOfType(flag.type)}`)} - ${flag.description}${flag.defaultValue !== undefined ? ` (Default: ${formatDefaultValue(flag.defaultValue, flag.type)})` : ''}`);
+        }
     }
 }
 
@@ -144,7 +179,8 @@ export function cli(commands: ICLICommands) {
         const argv = parseArgv();
 
         if (!argv.command) {
-            console.log('cli help');
+            console.log(`${chalk.bold(chalk.blue('BlockBuild CLI'))}\nUsage: ${chalk.yellowBright('blockb')} [command] [arguments] [flags]\n\n${chalk.bold('Commands:')}`);
+            for (const [commandName, command] of Object.entries(commands)) command.print(commandName);
             return;
         }
 
