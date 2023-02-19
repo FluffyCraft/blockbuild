@@ -4,13 +4,15 @@
   "version": "1.0.0",
   "main": "dist/index.js",
   "bin": {
-    "blockb": "dist/cli.js"
+    "blockb": "execute-cli.bat"
   },
   "devDependencies": {
+    "@types/glob": "^8.0.1",
     "@types/node": "^18.14.0"
   },
   "dependencies": {
     "chalk": "^5.2.0",
-    "node-fetch": "^3.3.0"
+    "glob": "^8.1.0",
+    "zod": "^3.20.6"
   }
 }

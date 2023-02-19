@@ -68,6 +68,7 @@ interface ICLICommandArg {
     name: string,
     type?: TType,
     defaultValue?: any,
+    useDefaultValue?: boolean, // default is true
     description: string
 }
 
@@ -76,6 +77,7 @@ interface ICLICommandFlag {
     alias?: string,
     type?: TType, // default is boolean, to accept any, set it to undefined.
     defaultValue?: any, // default is false, if you do not want a default value, set it to undefined
+    useDefaultValue?: boolean, // default is true
     description: string
 }
 
@@ -120,7 +122,7 @@ export class CLICommand {
 
             if (arg === undefined) {
                 if (expectedArg.defaultValue === undefined) throw `Missing required positional argument ${i}; \`${expectedArg.name}\`.`;
-                evaluatedArgs.push(expectedArg.defaultValue);
+                evaluatedArgs.push(expectedArg.useDefaultValue === false ? undefined : expectedArg.defaultValue);
                 continue;
             }
 
@@ -139,7 +141,7 @@ export class CLICommand {
             if (flag === undefined && expectedFlag.alias) flag = argv.flags[expectedFlag.alias];
             if (flag === undefined) {
                 if (expectedFlag.defaultValue === undefined) throw `Missing required flag; \`--${expectedFlag.name}\`${expectedFlag.alias ? ` (\`-${expectedFlag.alias}\`)` : ''}.`;
-                evaluatedFlags[expectedFlag.name] = expectedFlag.defaultValue;
+                evaluatedFlags[expectedFlag.name] = expectedFlag.useDefaultValue === false ? undefined : expectedFlag.defaultValue;
                 continue;
             }
 

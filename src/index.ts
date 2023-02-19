@@ -3,6 +3,9 @@
 // copy src/public to dist
 // execute all filters in node:vm and pass the context bridge exposed variables to context
 
-export function build() {
+import * as apiExtensions from './api-extensions.js';
+import * as zTypes from './zod-types.js';
 
+export function build(config: zTypes.IConfigRequired) {
+    apiExtensions.getLinker(config.srcPath);
 }
