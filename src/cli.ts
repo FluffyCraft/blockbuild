@@ -26,8 +26,8 @@ function parseConfigAsRequired(options: IParseConfigAsRequiredOptions) {
 
 const version = new CLICommand(() => console.log('Installed BlockBuild version: v0.1.0'), 'Returns the current version of BlockBuild.');
 const build = new CLICommand(
-    (flags, srcPath?: string, outPath?: string) => {
-        blockb.build(parseConfigAsRequired({ srcPath, outPath }));
+    async (flags, srcPath?: string, outPath?: string) => {
+        await blockb.build(parseConfigAsRequired({ srcPath, outPath }));
     },
     'Builds a project.',
     [

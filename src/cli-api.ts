@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import * as errors from './errors.js';
 
 interface IParsedArgv {
     command?: string,
@@ -27,7 +28,7 @@ function parseArgv(): IParsedArgv {
             const chars = arg.slice(1);
             for (const char of chars) {
                 if (char === '=') {
-                    if (!lastFlag) throw 'Error parsing flags. Found `=` immediately after `-`.'
+                    if (!lastFlag) throw errors.CLIError('Error parsing flags. Found `=` immediately after `-`.')
                     parsedArgv.flags[lastFlag] = chars.split('=')[1];
                     continue argLoop;
                 }
@@ -113,7 +114,7 @@ export class CLICommand {
         this.callback = callback;
     }
 
-    call(argv: IParsedArgv) {
+    async call(argv: IParsedArgv) {
         const evaluatedArgs = [];
 
         for (let i = 0; i < this.args.length; i++) {
@@ -121,14 +122,14 @@ export class CLICommand {
             const arg = argv.arguments[i];
 
             if (arg === undefined) {
-                if (expectedArg.defaultValue === undefined) throw `Missing required positional argument ${i}; \`${expectedArg.name}\`.`;
+                if (expectedArg.defaultValue === undefined) throw errors.CLIError(`Missing required positional argument ${i}; \`${expectedArg.name}\`.`);
                 evaluatedArgs.push(expectedArg.useDefaultValue === false ? undefined : expectedArg.defaultValue);
                 continue;
             }
 
             const coalescedArg = expectedArg.type ? expectedArg.type(arg) : arg;
 
-            if (Number.isNaN(coalescedArg)) throw `Unexpected type for positional argument ${i}; \`${expectedArg.name}\`. Expected \`${getNameOfType(expectedArg.type)}\`, got \`${typeof arg}\`.`;
+            if (Number.isNaN(coalescedArg)) throw errors.CLIError(`Unexpected type for positional argument ${i}; \`${expectedArg.name}\`. Expected \`${getNameOfType(expectedArg.type)}\`, got \`${typeof arg}\`.`);
 
             evaluatedArgs.push(coalescedArg);
         }
@@ -140,19 +141,19 @@ export class CLICommand {
 
             if (flag === undefined && expectedFlag.alias) flag = argv.flags[expectedFlag.alias];
             if (flag === undefined) {
-                if (expectedFlag.defaultValue === undefined) throw `Missing required flag; \`--${expectedFlag.name}\`${expectedFlag.alias ? ` (\`-${expectedFlag.alias}\`)` : ''}.`;
+                if (expectedFlag.defaultValue === undefined) throw errors.CLIError(`Missing required flag; \`--${expectedFlag.name}\`${expectedFlag.alias ? ` (\`-${expectedFlag.alias}\`)` : ''}.`);
                 evaluatedFlags[expectedFlag.name] = expectedFlag.useDefaultValue === false ? undefined : expectedFlag.defaultValue;
                 continue;
             }
 
             const coalescedFlag = expectedFlag.type ? expectedFlag.type(flag) : flag;
 
-            if (Number.isNaN(coalescedFlag)) throw `Unexpected type for flag; \`--${expectedFlag.name}\`${expectedFlag.alias ? ` (\`-${expectedFlag.alias}\`)` : ''}. Expected \`${getNameOfType(expectedFlag.type)}\`, got \`${typeof flag}\`.`;
+            if (Number.isNaN(coalescedFlag)) throw errors.CLIError(`Unexpected type for flag; \`--${expectedFlag.name}\`${expectedFlag.alias ? ` (\`-${expectedFlag.alias}\`)` : ''}. Expected \`${getNameOfType(expectedFlag.type)}\`, got \`${typeof flag}\`.`);
 
             evaluatedFlags[expectedFlag.name] = coalescedFlag;
         }
 
-        this.callback(evaluatedFlags, ...evaluatedArgs);
+        await this.callback(evaluatedFlags, ...evaluatedArgs);
     }
 
     print(name: string) {
@@ -177,6 +178,8 @@ interface ICLICommands {
 }
 
 export function cli(commands: ICLICommands) {
+    const logErr = (err: unknown) => console.log(`${chalk.bgRed(' FATAL ')} ${err}`);
+
     try {
         const argv = parseArgv();
 
@@ -187,11 +190,11 @@ export function cli(commands: ICLICommands) {
         }
 
         const command = commands[argv.command];
-        if (!command) throw `The command, \`${argv.command}\`, does not exist.`;
+        if (!command) throw errors.CLIError(`The command; \`${argv.command}\`, does not exist.`);
 
-        command.call(argv);
+        command.call(argv).catch(logErr);
     }
     catch (err) {
-        console.log(`${chalk.bgRed(' COMMAND ERROR ')} ${err}`);
+        logErr(err);
     }
 }

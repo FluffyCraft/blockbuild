@@ -1,5 +1,5 @@
 {
-    "path": "test/src",
+    "srcPath": "test/src",
     "outPath": "test/dist",
-    "filters": {}
+    "filters": []
 }
