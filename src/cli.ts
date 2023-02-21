@@ -5,6 +5,7 @@ import * as blockb from './index.js';
 import * as fs from 'fs';
 import * as zTypes from './zod-types.js';
 import * as errors from './errors.js';
+import chalk from 'chalk';
 
 interface IParseConfigAsRequiredOptions {
     srcPath?: string,
@@ -24,7 +25,7 @@ function parseConfigAsRequired(options: IParseConfigAsRequiredOptions) {
     return config as zTypes.IConfigRequired;
 }
 
-const version = new CLICommand(() => console.log('Installed BlockBuild version: v0.1.0'), 'Returns the current version of BlockBuild.');
+const version = new CLICommand(async () => console.log('Installed BlockBuild version: v0.1.0'), 'Returns the current version of BlockBuild.');
 const build = new CLICommand(
     async (flags, srcPath?: string, outPath?: string) => {
         await blockb.build(parseConfigAsRequired({ srcPath, outPath }));
@@ -59,7 +60,7 @@ const build = new CLICommand(
     ]
 )
 
-cli({
+await cli({
     version,
     build
 });

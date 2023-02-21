@@ -1,1 +1,1 @@
-node --experimental-vm-modules dist/cli.js %*
+node --experimental-vm-modules --no-warnings dist/cli.js %*

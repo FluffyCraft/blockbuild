@@ -177,9 +177,7 @@ interface ICLICommands {
     [command: string]: CLICommand
 }
 
-export function cli(commands: ICLICommands) {
-    const logErr = (err: unknown) => console.log(`${chalk.bgRed(' FATAL ')} ${err}`);
-
+export async function cli(commands: ICLICommands) {
     try {
         const argv = parseArgv();
 
@@ -192,9 +190,9 @@ export function cli(commands: ICLICommands) {
         const command = commands[argv.command];
         if (!command) throw errors.CLIError(`The command; \`${argv.command}\`, does not exist.`);
 
-        command.call(argv).catch(logErr);
+        await command.call(argv);
     }
     catch (err) {
-        logErr(err);
+        console.log(`${chalk.bgRed(' FATAL ')} ${err}`);
     }
 }

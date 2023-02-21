@@ -33,20 +33,23 @@ class Filter {
     }
 }
 
-export async function build(config: zTypes.IConfigRequired) {
-    const vmLinker = apiExtensions.getLinker(config.srcPath).catch(err => {
+async function evalFilters(srcPath: string) {
+    const vmLinker = await apiExtensions.getLinker(srcPath).catch(err => {
         throw errors.InternalError(err);
     });
 
     const filters: {
-        [id: string]: Promise<Filter>
+        [id: string]: Filter
     } = {};
 
     async function evalFilter(filePath: string, id: string) {
         let definitionOptions: TFilterDefinitionOptions | undefined;
 
         const context = vm.createContext({
-            filter: (o: TFilterDefinitionOptions) => definitionOptions = o
+            filter: (o: TFilterDefinitionOptions) => definitionOptions = o,
+            main() {
+                throw 'Main function not defined.';
+            }
         });
 
         // @ts-ignore
@@ -55,10 +58,8 @@ export async function build(config: zTypes.IConfigRequired) {
             context
         });
 
-        await module.link(await vmLinker);
+        await module.link(vmLinker);
         await module.evaluate();
-
-        if (!context.main) throw 'Main function not defined.'
 
         return new Filter(
             context.main,
@@ -70,22 +71,38 @@ export async function build(config: zTypes.IConfigRequired) {
         );
     }
 
-    function addPromiseToFilters(id: string, promise: Promise<Filter>) {
-        promise.catch(err => {
-            throw errors.RuntimeError(id, err);
-        });
-        filters[id] = promise;
+    const promises: Promise<Filter>[] = [];
+
+    function awaitFilterPromise(id: string, promise: Promise<Filter>) {
+        promises.push(
+            promise
+                .then(f => filters[id] = f)
+                .catch(e => {
+                    throw errors.RuntimeError(id, e);
+                })
+        );
     }
 
-    for (const filePath of glob.sync(`${config.srcPath}/filters/**/*.js`, { nodir: true })) {
+    for (const filePath of glob.sync(`${srcPath}/filters/**/*.js`, { nodir: true })) {
         const id = path.basename(filePath, '.js');
-        addPromiseToFilters(id, evalFilter(filePath, id));
+        awaitFilterPromise(id, evalFilter(filePath, id));
     }
 
     for (const filePath of glob.sync(`.blockbuild/modules/*/filters/**/*.js`, { nodir: true })) {
         const id = `${filePath.split('/')[2]}:${path.basename(filePath, '.js')}`;
-        addPromiseToFilters(id, evalFilter(filePath, id));
+        awaitFilterPromise(id, evalFilter(filePath, id));
     }
 
-    console.log(filters);
+    await Promise.all(promises);
+
+    return filters;
+}
+
+export async function build(config: zTypes.IConfigRequired) {
+    const filters = await evalFilters(config.srcPath);
+
+    for (const filterToExecute of config.filters) {
+        const filter = filters[filterToExecute.id];
+        if (!filter) throw errors.InternalError(`Cannot execute filter with id; \`${filterToExecute.id}\`, because it does not exist.`);
+    }
 }

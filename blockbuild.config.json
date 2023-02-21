@@ -1,5 +1,9 @@
 {
     "srcPath": "test/src",
     "outPath": "test/dist",
-    "filters": []
+    "filters": [
+        {
+            "id": "namespace:filter"
+        }
+    ]
 }
