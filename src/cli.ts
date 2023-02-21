@@ -5,7 +5,6 @@ import * as blockb from './index.js';
 import * as fs from 'fs';
 import * as zTypes from './zod-types.js';
 import * as errors from './errors.js';
-import chalk from 'chalk';
 
 interface IParseConfigAsRequiredOptions {
     srcPath?: string,
@@ -16,6 +15,7 @@ function parseConfigAsRequired(options: IParseConfigAsRequiredOptions) {
     const config = errors.ZodError.tryParseSchema(
         zTypes.Config,
         JSON.parse(fs.readFileSync('blockbuild.config.json', 'utf8')),
+        errors.ErrorCode.ZodParseConfigAsRequiredFailParse,
         'Error parsing config.'
     );
 

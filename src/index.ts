@@ -35,7 +35,7 @@ class Filter {
 
 async function evalFilters(srcPath: string) {
     const vmLinker = await apiExtensions.getLinker(srcPath).catch(err => {
-        throw errors.InternalError(err);
+        throw errors.InternalError(errors.ErrorCode.InternalEvalFiltersGetLinker, err);
     });
 
     const filters: {
@@ -66,7 +66,8 @@ async function evalFilters(srcPath: string) {
             errors.ZodError.tryParseSchema(
                 FilterDefinitionOptions,
                 definitionOptions,
-                errors.RuntimeError(id, 'Invalid definition options.')
+                errors.ErrorCode.ZodContainsChildError,
+                errors.RuntimeError(errors.ErrorCode.RuntimeEvalFilterParseDefOpts, id, 'Invalid definition options.')
             )
         );
     }
@@ -78,7 +79,7 @@ async function evalFilters(srcPath: string) {
             promise
                 .then(f => filters[id] = f)
                 .catch(e => {
-                    throw errors.RuntimeError(id, e);
+                    throw errors.RuntimeError(errors.ErrorCode.RuntimeEvalFilterAwaitFilterProm, id, e);
                 })
         );
     }
@@ -103,6 +104,6 @@ export async function build(config: zTypes.IConfigRequired) {
 
     for (const filterToExecute of config.filters) {
         const filter = filters[filterToExecute.id];
-        if (!filter) throw errors.InternalError(`Cannot execute filter with id; \`${filterToExecute.id}\`, because it does not exist.`);
+        if (!filter) throw errors.InternalError(errors.ErrorCode.InternalBuildFilterNotFound, `Cannot execute filter with id; \`${filterToExecute.id}\`, because it does not exist.`);
     }
 }

@@ -42,7 +42,7 @@ export async function getLinker(srcPath: string) {
 
     return (specifier: string, referencingModule: VMModule) => {
         const module = modules[specifier];
-        if (!module) throw errors.RuntimeError(referencingModule.identifier, `API extension; \`${specifier}\`, does not exist.`);
+        if (!module) throw errors.RuntimeError(errors.ErrorCode.RuntimeModuleLinkerModuleNotFound, referencingModule.identifier, `API extension; \`${specifier}\`, does not exist.`);
         return module;
     }
 }
