@@ -2,24 +2,27 @@ import { ZodIssue } from 'zod';
 import chalk from 'chalk';
 
 export const enum ErrorCode {
-    CLIParseEqualsAfterDash = 'CLI_0',
-    CLIMissingRequiredArgument = 'CLI_1',
-    CLIArgumentUnexpectedType = 'CLI_2',
-    CLIMissingRequiredFlag = 'CLI_3',
-    CLIFlagUnexpectedType = 'CLI_4',
-    CLICommandNotFound = 'CLI_5',
+    NoErrorCode = 'NONE', //! only use NoErrorCode if the error contains (or is contained by) an error which has an error code
 
-    RuntimeModuleLinkerModuleNotFound = 'RT_0',
-    RuntimeEvalFilterParseDefOpts = 'RT_1',
-    RuntimeEvalFilterAwaitFilterProm = 'RT_2',
+    CLIParseEqualsAfterDash = 'CLI0',
+    CLIMissingRequiredArgument = 'CLI1',
+    CLIArgumentUnexpectedType = 'CLI2',
+    CLIMissingRequiredFlag = 'CLI3',
+    CLIFlagUnexpectedType = 'CLI4',
+    CLICommandNotFound = 'CLI5',
 
-    InternalEvalFiltersGetLinker = 'I_0',
-    InternalBuildFilterNotFound = 'I_1',
+    RuntimeModuleLinkerModuleNotFound = 'RT0',
+    RuntimeEvalFilterParseDefOpts = 'RT1',
+    RuntimeEvalFilterAwaitFilterProm = 'RT2',
 
-    UncaughtCLI = 'U_0',
+    InternalEvalFiltersGetLinker = 'I0',
+    InternalBuildFilterNotFound = 'I1',
+    InternalConfigReadError = 'I2',
+    InternalConfigJSONParseError = 'I3',
 
-    ZodContainsChildError = 'Z_0',
-    ZodParseConfigAsRequiredFailParse = 'Z_1'
+    UncaughtCLI = 'U0',
+
+    ZodParseConfigAsRequiredFailParse = 'Z1'
 }
 
 export const error = (type: string, errorCode: ErrorCode, message: string | Error) => `${chalk.redBright(`BlockBuild${type}`)} (${errorCode}): ${message}`;

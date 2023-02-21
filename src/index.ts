@@ -66,7 +66,7 @@ async function evalFilters(srcPath: string) {
             errors.ZodError.tryParseSchema(
                 FilterDefinitionOptions,
                 definitionOptions,
-                errors.ErrorCode.ZodContainsChildError,
+                errors.ErrorCode.NoErrorCode,
                 errors.RuntimeError(errors.ErrorCode.RuntimeEvalFilterParseDefOpts, id, 'Invalid definition options.')
             )
         );

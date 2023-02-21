@@ -3,7 +3,7 @@
     "outPath": "test/dist",
     "filters": [
         {
-            "id": "namespace:filter"
+            "id": "filter"
         }
     ]
 }
