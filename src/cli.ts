@@ -31,7 +31,7 @@ async function parseConfigAsRequired(options: IParseConfigAsRequiredOptions) {
         'Error parsing config.'
     );
 
-    config.srcPath = options.srcPath || config.srcPath || '.';
+    config.srcPath = options.srcPath || config.srcPath || 'src';
     config.outPath = options.outPath || config.outPath || 'dist';
 
     return config as zTypes.IConfigRequired;
@@ -40,7 +40,7 @@ async function parseConfigAsRequired(options: IParseConfigAsRequiredOptions) {
 const version = new CLICommand(async () => console.log('Installed BlockBuild version: v0.1.0'), 'Returns the current version of BlockBuild.');
 const build = new CLICommand(
     async (flags, srcPath?: string, outPath?: string) => {
-        await blockb.build(await parseConfigAsRequired({ srcPath, outPath }));
+        await blockb.build(await parseConfigAsRequired({ srcPath, outPath }), flags);
     },
     'Builds a project.',
     [
@@ -48,7 +48,7 @@ const build = new CLICommand(
             name: 'srcPath',
             description: 'The path to find the source files.',
             type: String,
-            defaultValue: '.',
+            defaultValue: 'src',
             useDefaultValue: false
         },
         {
@@ -61,18 +61,25 @@ const build = new CLICommand(
     ],
     [
         {
+            name: 'package',
+            description: 'Package as a .mcaddon file. Automatically uses --production.'
+        },
+        {
             name: 'production',
             description: 'Build in production mode.',
             alias: 'p'
-        },
-        {
-            name: 'package',
-            description: 'Package as a .mcaddon file. Automatically uses --production.'
         }
     ]
-)
+);
+const init = new CLICommand(
+    (flags) => {
+
+    },
+    'Initializes a project'
+);
 
 await cli({
-    version,
-    build
+    build,
+    init,
+    version
 });

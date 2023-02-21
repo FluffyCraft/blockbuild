@@ -1,14 +1,21 @@
 import glob from 'glob';
 import { existsSync } from 'fs';
 import * as path from 'path';
+import * as stdlib from './stdlib.js';
 
-export async function evalExtensions(srcPath: string) {
-    const context: {
+export async function evalExtensions(srcPath: string, context: unknown) {
+    const modules: {
+        std: typeof stdlib,
         [module: string]: any
-    } = {};
+    } = {
+        std: stdlib
+    };
 
     async function addExtensionExportsToContext(moduleURL: string, namespace: string) {
-        context[namespace] = await import(moduleURL);
+        modules[namespace] = await (await import(moduleURL)).default({
+            context,
+            std: stdlib
+        });
     }
 
     const cwd = process.cwd();
@@ -21,5 +28,5 @@ export async function evalExtensions(srcPath: string) {
 
     await Promise.all(promises);
 
-    return context;
+    return modules;
 }

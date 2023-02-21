@@ -33,8 +33,13 @@ class Filter {
     }
 }
 
-async function evalFilters(srcPath: string) {
-    const api = await apiExtensions.evalExtensions(srcPath);
+async function evalFilters(config: zTypes.IConfigRequired, buildFlags: unknown) {
+    const context = {
+        buildFlags,
+        config
+    };
+
+    const api = await apiExtensions.evalExtensions(config.srcPath, context);
 
     const filters: {
         [id: string]: Filter
@@ -43,13 +48,14 @@ async function evalFilters(srcPath: string) {
     async function evalFilter(filePath: string, namespace: string, id: string) {
         let definitionOptions: TFilterDefinitionOptions | undefined;
 
-        const context = vm.createContext({
+        const vmContext = vm.createContext({
             filter: (o: TFilterDefinitionOptions) => definitionOptions = o,
             main() {
                 throw 'Main function not defined.';
             },
             context: {
-                namespace
+                namespace,
+                ...context
             },
             api: {
                 $this: api[namespace] ?? {},
@@ -57,10 +63,10 @@ async function evalFilters(srcPath: string) {
             }
         });
 
-        vm.runInContext(fs.readFileSync(filePath, 'utf8'), context);
+        vm.runInContext(fs.readFileSync(filePath, 'utf8'), vmContext);
 
         filters[id] = new Filter(
-            context.main,
+            vmContext.main,
             errors.ZodError.tryParseSchema(
                 FilterDefinitionOptions,
                 definitionOptions,
@@ -81,7 +87,7 @@ async function evalFilters(srcPath: string) {
         );
     }
 
-    for (const filePath of glob.sync(`${srcPath}/filters/**/*.js`, { nodir: true })) {
+    for (const filePath of glob.sync(`${config.srcPath}/filters/**/*.js`, { nodir: true })) {
         const id = path.basename(filePath, '.js');
         awaitFilterPromise(id, evalFilter(filePath, 'project', id));
     }
@@ -97,8 +103,8 @@ async function evalFilters(srcPath: string) {
     return filters;
 }
 
-export async function build(config: zTypes.IConfigRequired) {
-    const filters = await evalFilters(config.srcPath);
+export async function build(config: zTypes.IConfigRequired, buildFlags: unknown) {
+    const filters = await evalFilters(config, buildFlags);
 
     for (const filterToExecute of config.filters) {
         const filter = filters[filterToExecute.id];

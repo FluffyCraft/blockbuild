@@ -102,7 +102,6 @@ export class CLICommand {
 
     constructor(callback: (flags: ICLICommandCallbackFlags, ...args: any[]) => void, description: string, args: ICLICommandArg[] = [], flags: ICLICommandFlag[] = []) {
         this.flags = flags
-            .sort((a, b) => a.name > b.name ? 1 : -1)
             .map(arg => {
                 if (!('defaultValue' in arg)) arg.defaultValue = false;
                 if (!('type' in arg)) arg.type = boolean;
