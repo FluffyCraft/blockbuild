@@ -34,34 +34,32 @@ class Filter {
 }
 
 async function evalFilters(srcPath: string) {
-    const vmLinker = await apiExtensions.getLinker(srcPath).catch(err => {
-        throw errors.InternalError(errors.ErrorCode.InternalEvalFiltersGetLinker, err);
-    });
+    const api = await apiExtensions.evalExtensions(srcPath);
 
     const filters: {
         [id: string]: Filter
     } = {};
 
-    async function evalFilter(filePath: string, id: string) {
+    async function evalFilter(filePath: string, namespace: string, id: string) {
         let definitionOptions: TFilterDefinitionOptions | undefined;
 
         const context = vm.createContext({
             filter: (o: TFilterDefinitionOptions) => definitionOptions = o,
             main() {
                 throw 'Main function not defined.';
+            },
+            context: {
+                namespace
+            },
+            api: {
+                $this: api[namespace] ?? {},
+                ...api
             }
         });
 
-        // @ts-ignore
-        const module = new vm.SourceTextModule(fs.readFileSync(filePath, 'utf8'), {
-            identifier: id,
-            context
-        });
+        vm.runInContext(fs.readFileSync(filePath, 'utf8'), context);
 
-        await module.link(vmLinker);
-        await module.evaluate();
-
-        return new Filter(
+        filters[id] = new Filter(
             context.main,
             errors.ZodError.tryParseSchema(
                 FilterDefinitionOptions,
@@ -72,12 +70,11 @@ async function evalFilters(srcPath: string) {
         );
     }
 
-    const promises: Promise<Filter>[] = [];
+    const promises: Promise<void>[] = [];
 
-    function awaitFilterPromise(id: string, promise: Promise<Filter>) {
+    function awaitFilterPromise(id: string, promise: Promise<void>) {
         promises.push(
             promise
-                .then(f => filters[id] = f)
                 .catch(e => {
                     throw errors.RuntimeError(errors.ErrorCode.RuntimeEvalFilterAwaitFilterProm, id, e);
                 })
@@ -86,12 +83,13 @@ async function evalFilters(srcPath: string) {
 
     for (const filePath of glob.sync(`${srcPath}/filters/**/*.js`, { nodir: true })) {
         const id = path.basename(filePath, '.js');
-        awaitFilterPromise(id, evalFilter(filePath, id));
+        awaitFilterPromise(id, evalFilter(filePath, 'project', id));
     }
 
     for (const filePath of glob.sync(`.blockbuild/modules/*/filters/**/*.js`, { nodir: true })) {
-        const id = `${filePath.split('/')[2]}:${path.basename(filePath, '.js')}`;
-        awaitFilterPromise(id, evalFilter(filePath, id));
+        const namespace = filePath.split('/')[2];
+        const id = `${namespace}:${path.basename(filePath, '.js')}`;
+        awaitFilterPromise(id, evalFilter(filePath, namespace, id));
     }
 
     await Promise.all(promises);

@@ -4,6 +4,9 @@
     "filters": [
         {
             "id": "filter"
+        },
+        {
+            "id": "std:filter"
         }
     ]
 }

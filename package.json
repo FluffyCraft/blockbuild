@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "main": "dist/index.js",
   "bin": {
-    "blockb": "execute-cli.bat"
+    "blockb": "dist/cli.js"
   },
   "devDependencies": {
     "@types/glob": "^8.0.1",
