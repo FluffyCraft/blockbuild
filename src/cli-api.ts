@@ -121,14 +121,14 @@ export class CLICommand {
             const arg = argv.arguments[i];
 
             if (arg === undefined) {
-                if (expectedArg.defaultValue === undefined) throw errors.CLIError(errors.ErrorCode.CLIMissingRequiredArgument, `Missing required positional argument ${i}; \`${expectedArg.name}\`.`);
+                if (expectedArg.defaultValue === undefined) throw errors.CLIError(errors.ErrorCode.CLIMissingRequiredArgument, `Missing required positional argument ${i} (\`${expectedArg.name}\`).`);
                 evaluatedArgs.push(expectedArg.useDefaultValue === false ? undefined : expectedArg.defaultValue);
                 continue;
             }
 
             const coalescedArg = expectedArg.type ? expectedArg.type(arg) : arg;
 
-            if (Number.isNaN(coalescedArg)) throw errors.CLIError(errors.ErrorCode.CLIArgumentUnexpectedType, `Unexpected type for positional argument ${i}; \`${expectedArg.name}\`. Expected \`${getNameOfType(expectedArg.type)}\`, got \`${typeof arg}\`.`);
+            if (Number.isNaN(coalescedArg)) throw errors.CLIError(errors.ErrorCode.CLIArgumentUnexpectedType, `Unexpected type for positional argument ${i} (\`${expectedArg.name}\`). Expected \`${getNameOfType(expectedArg.type)}\`, got \`${typeof arg}\`.`);
 
             evaluatedArgs.push(coalescedArg);
         }
@@ -140,14 +140,14 @@ export class CLICommand {
 
             if (flag === undefined && expectedFlag.alias) flag = argv.flags[expectedFlag.alias];
             if (flag === undefined) {
-                if (expectedFlag.defaultValue === undefined) throw errors.CLIError(errors.ErrorCode.CLIMissingRequiredFlag, `Missing required flag; \`--${expectedFlag.name}\`${expectedFlag.alias ? ` (\`-${expectedFlag.alias}\`)` : ''}.`);
+                if (expectedFlag.defaultValue === undefined) throw errors.CLIError(errors.ErrorCode.CLIMissingRequiredFlag, `Missing required flag \`--${expectedFlag.name}\`${expectedFlag.alias ? ` (\`-${expectedFlag.alias}\`)` : ''}.`);
                 evaluatedFlags[expectedFlag.name] = expectedFlag.useDefaultValue === false ? undefined : expectedFlag.defaultValue;
                 continue;
             }
 
             const coalescedFlag = expectedFlag.type ? expectedFlag.type(flag) : flag;
 
-            if (Number.isNaN(coalescedFlag)) throw errors.CLIError(errors.ErrorCode.CLIFlagUnexpectedType, `Unexpected type for flag; \`--${expectedFlag.name}\`${expectedFlag.alias ? ` (\`-${expectedFlag.alias}\`)` : ''}. Expected \`${getNameOfType(expectedFlag.type)}\`, got \`${typeof flag}\`.`);
+            if (Number.isNaN(coalescedFlag)) throw errors.CLIError(errors.ErrorCode.CLIFlagUnexpectedType, `Unexpected type for flag \`--${expectedFlag.name}\`${expectedFlag.alias ? ` (\`-${expectedFlag.alias}\`)` : ''}. Expected \`${getNameOfType(expectedFlag.type)}\`, got \`${typeof flag}\`.`);
 
             evaluatedFlags[expectedFlag.name] = coalescedFlag;
         }
@@ -187,7 +187,7 @@ export async function cli(commands: ICLICommands) {
         }
 
         const command = commands[argv.command];
-        if (!command) throw errors.CLIError(errors.ErrorCode.CLICommandNotFound, `The command; \`${argv.command}\`, does not exist.`);
+        if (!command) throw errors.CLIError(errors.ErrorCode.CLICommandNotFound, `The command \`${argv.command}\` does not exist.`);
 
         await command.call(argv);
     }
