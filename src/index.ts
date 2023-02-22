@@ -1,7 +1,7 @@
 import * as apiExtensions from './api-extensions.js';
 import * as zTypes from './zod-types.js';
 import * as vm from 'vm';
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 import * as errors from './errors.js';
 import glob from 'glob';
 import { z } from 'zod';
@@ -28,6 +28,10 @@ class Filter {
     }
 }
 
+interface IFilters {
+    [id: string]: Filter
+}
+
 async function evalFilters(config: zTypes.IConfigRequired, buildFlags: unknown) {
     const context = {
         buildFlags,
@@ -36,9 +40,7 @@ async function evalFilters(config: zTypes.IConfigRequired, buildFlags: unknown) 
 
     const api = await apiExtensions.evalExtensions(config.srcPath, context);
 
-    const filters: {
-        [id: string]: Filter
-    } = {};
+    const filters: IFilters = {};
 
     async function evalFilter(filePath: string, namespace: string, id: string) {
         let definitionOptions: TFilterDefinitionOptions | undefined;
@@ -58,7 +60,7 @@ async function evalFilters(config: zTypes.IConfigRequired, buildFlags: unknown) 
             }
         });
 
-        vm.runInContext(fs.readFileSync(filePath, 'utf8'), vmContext);
+        vm.runInContext(await fs.readFile(filePath, 'utf8'), vmContext);
 
         filters[id] = new Filter(
             vmContext.main,
@@ -99,10 +101,18 @@ async function evalFilters(config: zTypes.IConfigRequired, buildFlags: unknown) 
 }
 
 export async function build(config: zTypes.IConfigRequired, buildFlags: unknown) {
-    const filters = await evalFilters(config, buildFlags);
+    let filters: unknown;
+
+    await fs.rm(config.outPath, { force: true, recursive: true });
+
+    await Promise.all([
+        evalFilters(config, buildFlags).then(res => filters = res),
+        fs.cp(path.join(path.join(config.srcPath, 'pack')), config.outPath, { recursive: true })
+    ]);
 
     for (const filterToExecute of config.filters) {
-        const filter = filters[filterToExecute.id];
+        const filter = (filters as IFilters)[filterToExecute.id];
         if (!filter) throw errors.InternalError(errors.ErrorCode.InternalBuildFilterNotFound, `Cannot execute filter with id \`${filterToExecute.id}\` because it does not exist.`);
+        filter.mainFunction();
     }
 }
