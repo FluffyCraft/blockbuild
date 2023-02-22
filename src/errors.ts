@@ -12,8 +12,10 @@ export const enum ErrorCode {
     CLICommandNotFound = 'CLI5',
     CLIInitNoBPOrRP = 'CLI6',
 
+    RuntimeArgumentsSchemaNoParseMethod = 'RT0',
     RuntimeEvalFilterParseDefOpts = 'RT1',
     RuntimeEvalFilterAwaitFilterProm = 'RT2',
+    RuntimeArgumentsSchemaParseMethodThrew = 'RT3',
 
     InternalBuildFilterNotFound = 'I1',
     InternalConfigReadError = 'I2',

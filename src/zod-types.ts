@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 const ConfigFilterExecuter = z.object({
     id: z.string(),
-    arguments: z.object({}).catchall(z.unknown()).optional()
+    arguments: z.any().optional()
 });
 
 export const Config = z.object({

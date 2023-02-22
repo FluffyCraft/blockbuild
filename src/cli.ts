@@ -156,7 +156,7 @@ const init = new CLICommand(
                 },
                 modules: [
                     {
-                        type: 'data',
+                        type: 'resources',
                         uuid: randomUUID(),
                         version: [1, 0, 0]
                     }

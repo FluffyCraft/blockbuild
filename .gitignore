@@ -2,3 +2,4 @@
 /node_modules
 /test
 /.blockbuild
+/blockbuild.config.json

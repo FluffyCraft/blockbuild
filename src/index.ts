@@ -9,22 +9,23 @@ import * as path from 'path';
 import { createWriteStream, existsSync } from 'fs';
 import archiver from 'archiver';
 
-const FilterArgumentDefinition = z.string().min(1).or(z.object({
-    name: z.string(),
-    schema: z.any().optional()
-}));
-
 const FilterDefinitionOptions = z.object({
-    arguments: z.array(FilterArgumentDefinition).optional()
+    arguments: z.any().optional()
 });
 
 type TFilterDefinitionOptions = z.infer<typeof FilterDefinitionOptions>;
+
+interface IFilterData {
+    args: {
+        [arg: string]: unknown
+    }
+}
 
 class Filter {
     mainFunction;
     definitionOptions;
 
-    constructor(mainFunction: () => void, definitionOptions: TFilterDefinitionOptions) {
+    constructor(mainFunction: (data: IFilterData) => void, definitionOptions: TFilterDefinitionOptions) {
         this.mainFunction = mainFunction;
         this.definitionOptions = definitionOptions;
     }
@@ -122,7 +123,22 @@ export async function build(config: zTypes.IConfigEvaluated, buildFlags: any) {
     for (const filterToExecute of config.filters) {
         const filter = (filters as IFilters)[filterToExecute.id];
         if (!filter) throw errors.InternalError(errors.ErrorCode.InternalBuildFilterNotFound, `Cannot execute filter with id \`${filterToExecute.id}\` because it does not exist.`);
-        filter.mainFunction();
+
+        let args;
+
+        if (filter.definitionOptions.arguments) {
+            if (!filter.definitionOptions.arguments.parse) throw errors.RuntimeError(errors.ErrorCode.RuntimeArgumentsSchemaNoParseMethod, filterToExecute.id, 'Arguments schema provided in the definition options does not have a `parse` method.');
+            try {
+                args = await filter.definitionOptions.arguments.parse(filterToExecute.arguments);
+            }
+            catch (err) {
+                throw errors.RuntimeError(errors.ErrorCode.RuntimeArgumentsSchemaParseMethodThrew, filterToExecute.id, `\`arguments.parse\` (from definition options) threw an error or could not be called.\n\t${err}`);
+            }
+        }
+
+        filter.mainFunction({
+            args
+        });
     }
 
     if (!buildFlags.production && !buildFlags.package) {

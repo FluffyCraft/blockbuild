@@ -6,7 +6,7 @@
   "repository": {
     "url": "https://github.com/FluffyCraft/blockbuild"
   },
-  "readme": "https://github.com/FluffyCraft/blockbuild#README.md",
+  "readme": "https://github.com/FluffyCraft/blockbuild#readme",
   "bin": {
     "blockb": "dist/cli.js"
   },
