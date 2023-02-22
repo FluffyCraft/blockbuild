@@ -1,9 +1,10 @@
 {
+    "packName": "My Pack",
     "srcPath": "test/src",
     "outPath": "test/dist",
-    "filters": [
-        {
-            "id": "filter"
-        }
-    ]
+    "packs": [
+        "BP",
+        "RP"
+    ],
+    "filters": []
 }

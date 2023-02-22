@@ -54,8 +54,10 @@ function parseArgv(): IParsedArgv {
 
 export function boolean(v: unknown) {
     switch (v) {
+        case true:
         case 'true':
             return true;
+        case false:
         case 'false':
             return false;
     }

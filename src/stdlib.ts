@@ -1,1 +1,1 @@
-export function test() { }
+export default class StandardLibraryAPI { }

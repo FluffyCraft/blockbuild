@@ -1,9 +1,11 @@
 import glob from 'glob';
 import { existsSync } from 'fs';
 import * as path from 'path';
-import * as stdlib from './stdlib.js';
+import StandardLibraryAPI from './stdlib.js';
 
 export async function evalExtensions(srcPath: string, context: unknown) {
+    const stdlib = new StandardLibraryAPI();
+
     const modules: {
         std: typeof stdlib,
         [module: string]: any

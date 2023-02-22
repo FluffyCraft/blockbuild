@@ -5,13 +5,15 @@ import * as blockb from './index.js';
 import * as fs from 'fs/promises';
 import * as zTypes from './zod-types.js';
 import * as errors from './errors.js';
+import * as path from 'path';
+import * as os from 'os';
 
 interface IParseConfigAsRequiredOptions {
     srcPath?: string,
     outPath?: string
 }
 
-async function parseConfigAsRequired(options: IParseConfigAsRequiredOptions) {
+async function evalConfig(options: IParseConfigAsRequiredOptions) {
     const configRaw = await fs.readFile('blockbuild.config.json', 'utf8').catch(err => {
         throw errors.InternalError(errors.ErrorCode.InternalConfigReadError, `Failed to read config file.\n\t${err}`);
     });
@@ -27,20 +29,23 @@ async function parseConfigAsRequired(options: IParseConfigAsRequiredOptions) {
     const config = errors.ZodError.tryParseSchema(
         zTypes.Config,
         configJSON,
-        errors.ErrorCode.ZodParseConfigAsRequiredFailParse,
+        errors.ErrorCode.ZodEvalConfigFailParse,
         'Error parsing config.'
     );
 
     config.srcPath = options.srcPath || config.srcPath || 'src';
     config.outPath = options.outPath || config.outPath || 'dist';
+    config.comMojangPath = typeof config.comMojangPath === 'object' ?
+        (config.comMojangPath.fromHomeDir ? path.join(os.homedir(), config.comMojangPath.path) : config.comMojangPath.path)
+        : (config.comMojangPath || path.join(os.homedir(), 'AppData/Local/Packages/Microsoft.MinecraftUWP_8wekyb3d8bbwe/LocalState/games/com.mojang'))
 
-    return config as zTypes.IConfigRequired;
+    return config as zTypes.IConfigEvaluated;
 }
 
-const version = new CLICommand(async () => console.log('Installed BlockBuild version: v0.1.0'), 'Returns the current version of BlockBuild.');
+const version = new CLICommand(async () => console.log('Installed BlockBuild version: v0.0.1'), 'Returns the current version of BlockBuild.');
 const build = new CLICommand(
     async (flags, srcPath?: string, outPath?: string) => {
-        await blockb.build(await parseConfigAsRequired({ srcPath, outPath }), flags);
+        await blockb.build(await evalConfig({ srcPath, outPath }), flags);
     },
     'Builds a project.',
     [
