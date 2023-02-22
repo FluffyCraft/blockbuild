@@ -10,6 +10,7 @@ export const enum ErrorCode {
     CLIMissingRequiredFlag = 'CLI3',
     CLIFlagUnexpectedType = 'CLI4',
     CLICommandNotFound = 'CLI5',
+    CLIInitNoBPOrRP = 'CLI6',
 
     RuntimeEvalFilterParseDefOpts = 'RT1',
     RuntimeEvalFilterAwaitFilterProm = 'RT2',

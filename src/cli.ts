@@ -7,6 +7,8 @@ import * as zTypes from './zod-types.js';
 import * as errors from './errors.js';
 import * as path from 'path';
 import * as os from 'os';
+import * as constants from './constants.js';
+import { randomUUID } from 'crypto';
 
 interface IParseConfigAsRequiredOptions {
     srcPath?: string,
@@ -42,7 +44,7 @@ async function evalConfig(options: IParseConfigAsRequiredOptions) {
     return config as zTypes.IConfigEvaluated;
 }
 
-const version = new CLICommand(async () => console.log('Installed BlockBuild version: v0.0.1'), 'Returns the current version of BlockBuild.');
+const version = new CLICommand(async () => console.log(`Installed BlockBuild version: v${constants.version}`), 'Returns the current version of BlockBuild.');
 const build = new CLICommand(
     async (flags, srcPath?: string, outPath?: string) => {
         await blockb.build(await evalConfig({ srcPath, outPath }), flags);
@@ -77,10 +79,125 @@ const build = new CLICommand(
     ]
 );
 const init = new CLICommand(
-    (flags) => {
+    async (flags, packName: string, authors: string) => {
+        if (flags.noBP && flags.noRP) throw errors.CLIError(errors.ErrorCode.CLIInitNoBPOrRP, '`--noBP` and `--noRP` cannot be used together.');
+
+        await fs.mkdir('src');
+
+        const packs = [];
+        if (!flags.noBP) packs.push('BP');
+        if (!flags.noRP) packs.push('RP');
+
+        const firstPromises: Promise<unknown>[] = [
+            fs.mkdir('dist'),
+            fs.mkdir('src/filters'),
+            fs.writeFile('src/api-extension.js', `export default function ({ context, std }) {\n\treturn {};\n}`),
+            fs.writeFile('blockbuild.config.json', JSON.stringify({
+                packName,
+                packs,
+                filters: []
+            }, undefined, 4))
+        ];
+
+        if (!flags.noBP) firstPromises.push(fs.mkdir('src/packs/BP/texts', { recursive: true }));
+        if (!flags.noRP) firstPromises.push(fs.mkdir('src/packs/RP/texts', { recursive: true }));
+
+        await Promise.all(firstPromises);
+
+        const secondPromises = [];
+
+        const BPUUID = randomUUID();
+        const RPUUID = randomUUID();
+
+        if (!flags.noBP) {
+            secondPromises.push(fs.writeFile('src/packs/BP/manifest.json', JSON.stringify({
+                format_version: 2,
+                metadata: {
+                    authors: authors.split(','),
+                    generated_with: { blockbuild: [constants.version] }
+                },
+                header: {
+                    name: 'pack.name',
+                    description: 'pack.description',
+                    min_engine_version: [1, 19, 0],
+                    uuid: BPUUID,
+                    version: [1, 0, 0]
+                },
+                modules: [
+                    {
+                        type: 'data',
+                        uuid: randomUUID(),
+                        version: [1, 0, 0]
+                    }
+                ],
+                dependencies: flags.noRP ? undefined : [
+                    {
+                        uuid: RPUUID,
+                        version: [1, 0, 0]
+                    }
+                ]
+            }, undefined, 4)));
+            secondPromises.push(fs.writeFile('src/packs/BP/texts/en_US.lang', `pack.name=${packName}\npack.description=`));
+            secondPromises.push(fs.writeFile('src/packs/BP/texts/languages.json', JSON.stringify(['en_US'], undefined, 4)));
+        }
+        if (!flags.noRP) {
+            secondPromises.push(fs.writeFile('src/packs/RP/manifest.json', JSON.stringify({
+                format_version: 2,
+                metadata: {
+                    authors: authors.split(','),
+                    generated_with: { blockbuild: [constants.version] }
+                },
+                header: {
+                    name: 'pack.name',
+                    description: 'pack.description',
+                    min_engine_version: [1, 19, 0],
+                    uuid: RPUUID,
+                    version: [1, 0, 0]
+                },
+                modules: [
+                    {
+                        type: 'data',
+                        uuid: randomUUID(),
+                        version: [1, 0, 0]
+                    }
+                ],
+                dependencies: flags.noBP ? undefined : [
+                    {
+                        uuid: BPUUID,
+                        version: [1, 0, 0]
+                    }
+                ]
+            }, undefined, 4)));
+            secondPromises.push(fs.writeFile('src/packs/RP/texts/en_US.lang', `pack.name=${packName}\npack.description=`));
+            secondPromises.push(fs.writeFile('src/packs/RP/texts/languages.json', JSON.stringify(['en_US'], undefined, 4)));
+        }
+
+        await Promise.all(secondPromises);
 
     },
-    'Initializes a project'
+    'Initializes a project',
+    [
+        {
+            name: 'packName',
+            description: 'The name of your pack. This will be used in the config.',
+            type: String
+        },
+        {
+            name: 'authors',
+            description: 'The authors of your pack, separated by commas.',
+            type: String
+        }
+    ],
+    [
+        {
+            name: 'noBP',
+            description: 'Do not create a behavior pack.'
+        },
+        {
+            name: 'noRP',
+            description: 'Do not create a resource pack.'
+        }
+    ]
 );
 
 await cli({
