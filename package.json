@@ -3,6 +3,10 @@
   "name": "blockbuild",
   "version": "1.0.0",
   "main": "dist/index.js",
+  "repository": {
+    "url": "https://github.com/FluffyCraft/blockbuild"
+  },
+  "readme": "https://github.com/FluffyCraft/blockbuild#README.md",
   "bin": {
     "blockb": "dist/cli.js"
   },
