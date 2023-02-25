@@ -3,9 +3,9 @@
 import { cli, CLICommand, boolean } from './cli-api.js';
 import * as blockb from './index.js';
 import * as fs from 'fs/promises';
-import * as zTypes from './zod-types.js';
+import * as types from './types.js';
 import * as errors from './errors.js';
-import * as path from 'path';
+import * as path from 'path/win32';
 import * as os from 'os';
 import * as constants from './constants.js';
 import { randomUUID } from 'crypto';
@@ -29,7 +29,7 @@ async function evalConfig(options: IParseConfigAsRequiredOptions) {
     }
 
     const config = errors.ZodError.tryParseSchema(
-        zTypes.Config,
+        types.Config,
         configJSON,
         errors.ErrorCode.ZodEvalConfigFailParse,
         'Error parsing config.'
@@ -41,7 +41,7 @@ async function evalConfig(options: IParseConfigAsRequiredOptions) {
         (config.comMojangPath.fromHomeDir ? path.join(os.homedir(), config.comMojangPath.path) : config.comMojangPath.path)
         : (config.comMojangPath || path.join(os.homedir(), 'AppData/Local/Packages/Microsoft.MinecraftUWP_8wekyb3d8bbwe/LocalState/games/com.mojang'))
 
-    return config as zTypes.IConfigEvaluated;
+    return config as types.IConfigEvaluated;
 }
 
 const version = new CLICommand(async () => console.log(`Installed BlockBuild version: v${constants.version}`), 'Returns the current version of BlockBuild.');
@@ -96,6 +96,9 @@ const init = new CLICommand(
                 packName,
                 packs,
                 filters: []
+            }, undefined, 4)),
+            fs.writeFile('package.json', JSON.stringify({
+                type: 'module'
             }, undefined, 4))
         ];
 

@@ -27,3 +27,8 @@ export interface IConfigEvaluated {
     packs: ('BP' | 'RP')[]
     filters: z.infer<typeof ConfigFilterExecuter>[]
 }
+
+export interface IContext {
+    buildFlags: IBuildFlags,
+    config: IConfigEvaluated
+}

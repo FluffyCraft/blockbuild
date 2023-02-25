@@ -1,11 +1,11 @@
 import * as apiExtensions from './api-extensions.js';
-import * as zTypes from './zod-types.js';
+import * as types from './types.js';
 import * as vm from 'vm';
 import * as fs from 'fs/promises';
 import * as errors from './errors.js';
 import glob from 'glob';
 import { z } from 'zod';
-import * as path from 'path';
+import * as path from 'path/win32';
 import { createWriteStream, existsSync } from 'fs';
 import archiver from 'archiver';
 
@@ -35,13 +35,13 @@ interface IFilters {
     [id: string]: Filter
 }
 
-async function evalFilters(config: zTypes.IConfigEvaluated, buildFlags: any) {
+async function evalFilters(config: types.IConfigEvaluated, buildFlags: any) {
     const context = {
         buildFlags,
         config
     };
 
-    const api = await apiExtensions.evalExtensions(config.srcPath, context);
+    const api = await apiExtensions.evalExtensions(context);
 
     const filters: IFilters = {};
 
@@ -49,7 +49,7 @@ async function evalFilters(config: zTypes.IConfigEvaluated, buildFlags: any) {
         let definitionOptions: TFilterDefinitionOptions | undefined;
 
         const vmContext = vm.createContext({
-            filter: (o: TFilterDefinitionOptions) => definitionOptions = o,
+            filter: (o: TFilterDefinitionOptions = {}) => definitionOptions = o,
             main() {
                 throw 'Main function not defined.';
             },
@@ -103,7 +103,7 @@ async function evalFilters(config: zTypes.IConfigEvaluated, buildFlags: any) {
     return filters;
 }
 
-export async function build(config: zTypes.IConfigEvaluated, buildFlags: any) {
+export async function build(config: types.IConfigEvaluated, buildFlags: any) {
     const packPath = path.join(config.srcPath, 'packs');
     const BPPath = path.join(packPath, 'BP');
     const RPPath = path.join(packPath, 'RP');

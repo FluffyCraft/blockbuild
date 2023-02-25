@@ -1,10 +1,11 @@
 import glob from 'glob';
 import { existsSync } from 'fs';
-import * as path from 'path';
+import * as path from 'path/win32';
 import StandardLibraryAPI from './stdlib.js';
+import * as types from './types.js';
 
-export async function evalExtensions(srcPath: string, context: unknown) {
-    const stdlib = new StandardLibraryAPI();
+export async function evalExtensions(context: types.IContext) {
+    const stdlib = new StandardLibraryAPI(context);
 
     const modules: {
         std: typeof stdlib,
@@ -21,7 +22,7 @@ export async function evalExtensions(srcPath: string, context: unknown) {
     }
 
     const cwd = process.cwd();
-    const projectExtensionFilePath = path.join(cwd, srcPath, 'api-extension.js');
+    const projectExtensionFilePath = path.join(cwd, context.config.srcPath, 'api-extension.js');
 
     const promises: Promise<void>[] = [];
     if (existsSync(projectExtensionFilePath)) promises.push(addExtensionExportsToContext(`file://${projectExtensionFilePath}`, 'project'));
