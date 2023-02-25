@@ -1,3 +1,23 @@
+/*
+BlockBuild - A Minecraft addon compiler.
+Copyright (C) 2023 FluffyCraft
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+EMAIL: contact@fluffycraft.net
+*/
+
 import * as apiExtensions from "./api-extensions.js";
 import * as types from "./types.js";
 import * as vm from "vm";
@@ -25,10 +45,7 @@ class Filter {
   mainFunction;
   definitionOptions;
 
-  constructor(
-    mainFunction: (data: IFilterData) => void,
-    definitionOptions: TFilterDefinitionOptions
-  ) {
+  constructor(mainFunction: (data: IFilterData) => void, definitionOptions: TFilterDefinitionOptions) {
     this.mainFunction = mainFunction;
     this.definitionOptions = definitionOptions;
   }
@@ -74,11 +91,7 @@ async function evalFilters(config: types.IConfigEvaluated, buildFlags: any) {
         FilterDefinitionOptions,
         definitionOptions,
         errors.ErrorCode.NoErrorCode,
-        errors.RuntimeError(
-          errors.ErrorCode.RuntimeEvalFilterParseDefOpts,
-          id,
-          "Invalid definition options."
-        )
+        errors.RuntimeError(errors.ErrorCode.RuntimeEvalFilterParseDefOpts, id, "Invalid definition options.")
       )
     );
   }
@@ -88,11 +101,7 @@ async function evalFilters(config: types.IConfigEvaluated, buildFlags: any) {
   function awaitFilterPromise(id: string, promise: Promise<void>) {
     promises.push(
       promise.catch((e) => {
-        throw errors.RuntimeError(
-          errors.ErrorCode.RuntimeEvalFilterAwaitFilterProm,
-          id,
-          e
-        );
+        throw errors.RuntimeError(errors.ErrorCode.RuntimeEvalFilterAwaitFilterProm, id, e);
       })
     );
   }
@@ -137,10 +146,7 @@ export async function build(config: types.IConfigEvaluated, buildFlags: any) {
 
   await fs.rm(config.outPath, { force: true, recursive: true });
 
-  await Promise.all([
-    evalFilters(config, buildFlags).then((res) => (filters = res)),
-    fs.cp(packPath, config.outPath, { recursive: true })
-  ]);
+  await Promise.all([evalFilters(config, buildFlags).then((res) => (filters = res)), fs.cp(packPath, config.outPath, { recursive: true })]);
 
   for (const filterToExecute of config.filters) {
     const filter = (filters as IFilters)[filterToExecute.id];
@@ -160,9 +166,7 @@ export async function build(config: types.IConfigEvaluated, buildFlags: any) {
           "Arguments schema provided in the definition options does not have a `parse` method."
         );
       try {
-        args = await filter.definitionOptions.arguments.parse(
-          filterToExecute.arguments
-        );
+        args = await filter.definitionOptions.arguments.parse(filterToExecute.arguments);
       } catch (err) {
         throw errors.RuntimeError(
           errors.ErrorCode.RuntimeArgumentsSchemaParseMethodThrew,
@@ -181,56 +185,35 @@ export async function build(config: types.IConfigEvaluated, buildFlags: any) {
     // copy packs to com.mojang
     if (config.packs.includes("BP"))
       (async () => {
-        const destPath = path.join(
-          config.comMojangPath,
-          "development_behavior_packs",
-          config.packName
-        );
+        const destPath = path.join(config.comMojangPath, "development_behavior_packs", config.packName);
         await fs.rm(destPath, { recursive: true, force: true });
         await fs.cp(BPPath, destPath, { recursive: true });
-        console.log(
-          `Copied \`${BPPath}\` to \`${destPath}\`. Use \`--production\` to disable this.`
-        );
+        console.log(`Copied \`${BPPath}\` to \`${destPath}\`. Use \`--production\` to disable this.`);
       })();
 
     if (config.packs.includes("RP"))
       (async () => {
-        const destPath = path.join(
-          config.comMojangPath,
-          "development_resource_packs",
-          config.packName
-        );
+        const destPath = path.join(config.comMojangPath, "development_resource_packs", config.packName);
         await fs.rm(destPath, { recursive: true, force: true });
         await fs.cp(RPPath, destPath, { recursive: true });
-        console.log(
-          `Copied \`${RPPath}\` to \`${destPath}\`. Use \`--production\` to disable this.`
-        );
+        console.log(`Copied \`${RPPath}\` to \`${destPath}\`. Use \`--production\` to disable this.`);
       })();
   }
 
   if (buildFlags.package) {
     // zip dist to .mcaddon
     if (existsSync("tmp"))
-      throw errors.InternalError(
-        errors.ErrorCode.InternalBuildPackageTmpFileExists,
-        `Cannot package project. There is already a file at \`tmp\`.`
-      );
+      throw errors.InternalError(errors.ErrorCode.InternalBuildPackageTmpFileExists, `Cannot package project. There is already a file at \`tmp\`.`);
 
     const output = createWriteStream("tmp");
     const archive = archiver("zip");
 
     archive.on("warning", (err) => {
-      throw errors.InternalError(
-        errors.ErrorCode.InternalBuildPackageArchiverWarning,
-        err
-      );
+      throw errors.InternalError(errors.ErrorCode.InternalBuildPackageArchiverWarning, err);
     });
 
     archive.on("error", (err) => {
-      throw errors.InternalError(
-        errors.ErrorCode.InternalBuildPackageArchiverError,
-        err
-      );
+      throw errors.InternalError(errors.ErrorCode.InternalBuildPackageArchiverError, err);
     });
 
     archive.pipe(output);
@@ -238,13 +221,8 @@ export async function build(config: types.IConfigEvaluated, buildFlags: any) {
 
     await archive.finalize();
 
-    const packagedArchivePath = path.join(
-      config.outPath,
-      `${config.packName}.mcaddon`
-    );
+    const packagedArchivePath = path.join(config.outPath, `${config.packName}.mcaddon`);
     await fs.rename("tmp", packagedArchivePath);
-    console.log(
-      `Packaged files at \`${config.outPath}\` into archive \`${packagedArchivePath}\`.`
-    );
+    console.log(`Packaged files at \`${config.outPath}\` into archive \`${packagedArchivePath}\`.`);
   }
 }

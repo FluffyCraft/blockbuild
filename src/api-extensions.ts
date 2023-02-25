@@ -1,3 +1,23 @@
+/*
+BlockBuild - A Minecraft addon compiler.
+Copyright (C) 2023 FluffyCraft
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+EMAIL: contact@fluffycraft.net
+*/
+
 import glob from "glob";
 import { existsSync } from "fs";
 import * as path from "path/win32";
@@ -14,10 +34,7 @@ export async function evalExtensions(context: types.IContext) {
     std: stdlib
   };
 
-  async function addExtensionExportsToContext(
-    moduleURL: string,
-    namespace: string
-  ) {
+  async function addExtensionExportsToContext(moduleURL: string, namespace: string) {
     modules[namespace] = await (
       await import(moduleURL)
     ).default({
@@ -27,30 +44,15 @@ export async function evalExtensions(context: types.IContext) {
   }
 
   const cwd = process.cwd();
-  const projectExtensionFilePath = path.join(
-    cwd,
-    context.config.srcPath,
-    "api-extension.js"
-  );
+  const projectExtensionFilePath = path.join(cwd, context.config.srcPath, "api-extension.js");
 
   const promises: Promise<void>[] = [];
-  if (existsSync(projectExtensionFilePath))
-    promises.push(
-      addExtensionExportsToContext(
-        `file://${projectExtensionFilePath}`,
-        "project"
-      )
-    );
+  if (existsSync(projectExtensionFilePath)) promises.push(addExtensionExportsToContext(`file://${projectExtensionFilePath}`, "project"));
 
   for (const filePath of glob.sync(`.blockbuild/modules/*/api-extension.js`, {
     nodir: true
   }))
-    promises.push(
-      addExtensionExportsToContext(
-        `file://${path.join(cwd, filePath)}`,
-        filePath.split("/")[2]
-      )
-    );
+    promises.push(addExtensionExportsToContext(`file://${path.join(cwd, filePath)}`, filePath.split("/")[2]));
 
   await Promise.all(promises);
 

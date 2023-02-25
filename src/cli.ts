@@ -1,5 +1,25 @@
 #!/usr/bin/env node
 
+/*
+BlockBuild - A Minecraft addon compiler.
+Copyright (C) 2023 FluffyCraft
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+EMAIL: contact@fluffycraft.net
+*/
+
 import { cli, CLICommand, boolean } from "./cli-api.js";
 import * as blockb from "./index.js";
 import * as fs from "fs/promises";
@@ -16,32 +36,19 @@ interface IParseConfigAsRequiredOptions {
 }
 
 async function evalConfig(options: IParseConfigAsRequiredOptions) {
-  const configRaw = await fs
-    .readFile("blockbuild.config.json", "utf8")
-    .catch((err) => {
-      throw errors.InternalError(
-        errors.ErrorCode.InternalConfigReadError,
-        `Failed to read config file.\n\t${err}`
-      );
-    });
+  const configRaw = await fs.readFile("blockbuild.config.json", "utf8").catch((err) => {
+    throw errors.InternalError(errors.ErrorCode.InternalConfigReadError, `Failed to read config file.\n\t${err}`);
+  });
 
   let configJSON;
 
   try {
     configJSON = JSON.parse(configRaw);
   } catch (err) {
-    throw errors.InternalError(
-      errors.ErrorCode.InternalConfigJSONParseError,
-      `Failed to parse config file.\n\t${err}`
-    );
+    throw errors.InternalError(errors.ErrorCode.InternalConfigJSONParseError, `Failed to parse config file.\n\t${err}`);
   }
 
-  const config = errors.ZodError.tryParseSchema(
-    types.Config,
-    configJSON,
-    errors.ErrorCode.ZodEvalConfigFailParse,
-    "Error parsing config."
-  );
+  const config = errors.ZodError.tryParseSchema(types.Config, configJSON, errors.ErrorCode.ZodEvalConfigFailParse, "Error parsing config.");
 
   config.srcPath = options.srcPath || config.srcPath || "src";
   config.outPath = options.outPath || config.outPath || "dist";
@@ -50,20 +57,12 @@ async function evalConfig(options: IParseConfigAsRequiredOptions) {
       ? config.comMojangPath.fromHomeDir
         ? path.join(os.homedir(), config.comMojangPath.path)
         : config.comMojangPath.path
-      : config.comMojangPath ||
-        path.join(
-          os.homedir(),
-          "AppData/Local/Packages/Microsoft.MinecraftUWP_8wekyb3d8bbwe/LocalState/games/com.mojang"
-        );
+      : config.comMojangPath || path.join(os.homedir(), "AppData/Local/Packages/Microsoft.MinecraftUWP_8wekyb3d8bbwe/LocalState/games/com.mojang");
 
   return config as types.IConfigEvaluated;
 }
 
-const version = new CLICommand(
-  async () =>
-    console.log(`Installed BlockBuild version: v${constants.version}`),
-  "Returns the current version of BlockBuild."
-);
+const version = new CLICommand(async () => console.log(`Installed BlockBuild version: v${constants.version}`), "Returns the current version of BlockBuild.");
 const build = new CLICommand(
   async (flags, srcPath?: string, outPath?: string) => {
     await blockb.build(await evalConfig({ srcPath, outPath }), flags);
@@ -88,8 +87,7 @@ const build = new CLICommand(
   [
     {
       name: "package",
-      description:
-        "Package as a .mcaddon file. Automatically uses --production."
+      description: "Package as a .mcaddon file. Automatically uses --production."
     },
     {
       name: "production",
@@ -100,11 +98,7 @@ const build = new CLICommand(
 );
 const init = new CLICommand(
   async (flags, packName: string, authors: string) => {
-    if (flags.noBP && flags.noRP)
-      throw errors.CLIError(
-        errors.ErrorCode.CLIInitNoBPOrRP,
-        "`--noBP` and `--noRP` cannot be used together."
-      );
+    if (flags.noBP && flags.noRP) throw errors.CLIError(errors.ErrorCode.CLIInitNoBPOrRP, "`--noBP` and `--noRP` cannot be used together.");
 
     await fs.mkdir("src");
 
@@ -115,10 +109,7 @@ const init = new CLICommand(
     const firstPromises: Promise<unknown>[] = [
       fs.mkdir("dist"),
       fs.mkdir("src/filters"),
-      fs.writeFile(
-        "src/api-extension.js",
-        `export default function ({ context, std }) {\n\treturn {};\n}`
-      ),
+      fs.writeFile("src/api-extension.js", `export default function ({ context, std }) {\n\treturn {};\n}`),
       fs.writeFile(
         "blockbuild.config.json",
         JSON.stringify(
@@ -143,10 +134,8 @@ const init = new CLICommand(
       )
     ];
 
-    if (!flags.noBP)
-      firstPromises.push(fs.mkdir("src/packs/BP/texts", { recursive: true }));
-    if (!flags.noRP)
-      firstPromises.push(fs.mkdir("src/packs/RP/texts", { recursive: true }));
+    if (!flags.noBP) firstPromises.push(fs.mkdir("src/packs/BP/texts", { recursive: true }));
+    if (!flags.noRP) firstPromises.push(fs.mkdir("src/packs/RP/texts", { recursive: true }));
 
     await Promise.all(firstPromises);
 
@@ -194,18 +183,8 @@ const init = new CLICommand(
           )
         )
       );
-      secondPromises.push(
-        fs.writeFile(
-          "src/packs/BP/texts/en_US.lang",
-          `pack.name=${packName}\npack.description=`
-        )
-      );
-      secondPromises.push(
-        fs.writeFile(
-          "src/packs/BP/texts/languages.json",
-          JSON.stringify(["en_US"], undefined, 4)
-        )
-      );
+      secondPromises.push(fs.writeFile("src/packs/BP/texts/en_US.lang", `pack.name=${packName}\npack.description=`));
+      secondPromises.push(fs.writeFile("src/packs/BP/texts/languages.json", JSON.stringify(["en_US"], undefined, 4)));
     }
     if (!flags.noRP) {
       secondPromises.push(
@@ -246,18 +225,8 @@ const init = new CLICommand(
           )
         )
       );
-      secondPromises.push(
-        fs.writeFile(
-          "src/packs/RP/texts/en_US.lang",
-          `pack.name=${packName}\npack.description=`
-        )
-      );
-      secondPromises.push(
-        fs.writeFile(
-          "src/packs/RP/texts/languages.json",
-          JSON.stringify(["en_US"], undefined, 4)
-        )
-      );
+      secondPromises.push(fs.writeFile("src/packs/RP/texts/en_US.lang", `pack.name=${packName}\npack.description=`));
+      secondPromises.push(fs.writeFile("src/packs/RP/texts/languages.json", JSON.stringify(["en_US"], undefined, 4)));
     }
 
     await Promise.all(secondPromises);

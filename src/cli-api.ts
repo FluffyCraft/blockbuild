@@ -1,3 +1,23 @@
+/*
+BlockBuild - A Minecraft addon compiler.
+Copyright (C) 2023 FluffyCraft
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+EMAIL: contact@fluffycraft.net
+*/
+
 import chalk from "chalk";
 import * as errors from "./errors.js";
 
@@ -28,11 +48,7 @@ function parseArgv(): IParsedArgv {
       const chars = arg.slice(1);
       for (const char of chars) {
         if (char === "=") {
-          if (!lastFlag)
-            throw errors.CLIError(
-              errors.ErrorCode.CLIParseEqualsAfterDash,
-              "Error parsing flags. Found `=` immediately after `-`."
-            );
+          if (!lastFlag) throw errors.CLIError(errors.ErrorCode.CLIParseEqualsAfterDash, "Error parsing flags. Found `=` immediately after `-`.");
           parsedArgv.flags[lastFlag] = chars.split("=")[1];
           continue argLoop;
         }
@@ -97,9 +113,7 @@ function getNameOfType(type?: TType) {
 }
 
 function formatDefaultValue(defaultValue: any, type?: TType) {
-  return type === String
-    ? chalk.green(`"${defaultValue}"`)
-    : chalk.red(defaultValue);
+  return type === String ? chalk.green(`"${defaultValue}"`) : chalk.red(defaultValue);
 }
 
 export class CLICommand {
@@ -134,15 +148,8 @@ export class CLICommand {
 
       if (arg === undefined) {
         if (expectedArg.defaultValue === undefined)
-          throw errors.CLIError(
-            errors.ErrorCode.CLIMissingRequiredArgument,
-            `Missing required positional argument ${i} (\`${expectedArg.name}\`).`
-          );
-        evaluatedArgs.push(
-          expectedArg.useDefaultValue === false
-            ? undefined
-            : expectedArg.defaultValue
-        );
+          throw errors.CLIError(errors.ErrorCode.CLIMissingRequiredArgument, `Missing required positional argument ${i} (\`${expectedArg.name}\`).`);
+        evaluatedArgs.push(expectedArg.useDefaultValue === false ? undefined : expectedArg.defaultValue);
         continue;
       }
 
@@ -151,11 +158,7 @@ export class CLICommand {
       if (Number.isNaN(coalescedArg))
         throw errors.CLIError(
           errors.ErrorCode.CLIArgumentUnexpectedType,
-          `Unexpected type for positional argument ${i} (\`${
-            expectedArg.name
-          }\`). Expected \`${getNameOfType(
-            expectedArg.type
-          )}\`, got \`${typeof arg}\`.`
+          `Unexpected type for positional argument ${i} (\`${expectedArg.name}\`). Expected \`${getNameOfType(expectedArg.type)}\`, got \`${typeof arg}\`.`
         );
 
       evaluatedArgs.push(coalescedArg);
@@ -166,20 +169,14 @@ export class CLICommand {
     for (const expectedFlag of this.flags) {
       let flag = argv.flags[expectedFlag.name];
 
-      if (flag === undefined && expectedFlag.alias)
-        flag = argv.flags[expectedFlag.alias];
+      if (flag === undefined && expectedFlag.alias) flag = argv.flags[expectedFlag.alias];
       if (flag === undefined) {
         if (expectedFlag.defaultValue === undefined)
           throw errors.CLIError(
             errors.ErrorCode.CLIMissingRequiredFlag,
-            `Missing required flag \`--${expectedFlag.name}\`${
-              expectedFlag.alias ? ` (\`-${expectedFlag.alias}\`)` : ""
-            }.`
+            `Missing required flag \`--${expectedFlag.name}\`${expectedFlag.alias ? ` (\`-${expectedFlag.alias}\`)` : ""}.`
           );
-        evaluatedFlags[expectedFlag.name] =
-          expectedFlag.useDefaultValue === false
-            ? undefined
-            : expectedFlag.defaultValue;
+        evaluatedFlags[expectedFlag.name] = expectedFlag.useDefaultValue === false ? undefined : expectedFlag.defaultValue;
         continue;
       }
 
@@ -188,9 +185,7 @@ export class CLICommand {
       if (Number.isNaN(coalescedFlag))
         throw errors.CLIError(
           errors.ErrorCode.CLIFlagUnexpectedType,
-          `Unexpected type for flag \`--${expectedFlag.name}\`${
-            expectedFlag.alias ? ` (\`-${expectedFlag.alias}\`)` : ""
-          }. Expected \`${getNameOfType(
+          `Unexpected type for flag \`--${expectedFlag.name}\`${expectedFlag.alias ? ` (\`-${expectedFlag.alias}\`)` : ""}. Expected \`${getNameOfType(
             expectedFlag.type
           )}\`, got \`${typeof flag}\`.`
         );
@@ -208,15 +203,9 @@ export class CLICommand {
       console.log(`\t${chalk.bold("Positional Arguments:")}`);
       for (const arg of this.args)
         console.log(
-          `\t\t${chalk.blue(
-            arg.defaultValue !== undefined ? `[${arg.name}]` : `<${arg.name}>`
-          )}${chalk.green(`: ${getNameOfType(arg.type)}`)} - ${
+          `\t\t${chalk.blue(arg.defaultValue !== undefined ? `[${arg.name}]` : `<${arg.name}>`)}${chalk.green(`: ${getNameOfType(arg.type)}`)} - ${
             arg.description
-          }${
-            arg.defaultValue !== undefined
-              ? ` (Default: ${formatDefaultValue(arg.defaultValue, arg.type)})`
-              : ""
-          }`
+          }${arg.defaultValue !== undefined ? ` (Default: ${formatDefaultValue(arg.defaultValue, arg.type)})` : ""}`
         );
     }
 
@@ -224,20 +213,9 @@ export class CLICommand {
       console.log(`\t${chalk.bold("Flags:")}`);
       for (const flag of this.flags)
         console.log(
-          `\t\t${chalk.blue(
-            flag.defaultValue !== undefined
-              ? `[--${flag.name}]`
-              : `<--${flag.name}>`
-          )}${flag.alias ? ` (-${flag.alias})` : ""}${chalk.green(
+          `\t\t${chalk.blue(flag.defaultValue !== undefined ? `[--${flag.name}]` : `<--${flag.name}>`)}${flag.alias ? ` (-${flag.alias})` : ""}${chalk.green(
             `: ${getNameOfType(flag.type)}`
-          )} - ${flag.description}${
-            flag.defaultValue !== undefined
-              ? ` (Default: ${formatDefaultValue(
-                  flag.defaultValue,
-                  flag.type
-                )})`
-              : ""
-          }`
+          )} - ${flag.description}${flag.defaultValue !== undefined ? ` (Default: ${formatDefaultValue(flag.defaultValue, flag.type)})` : ""}`
         );
     }
   }
@@ -253,28 +231,18 @@ export async function cli(commands: ICLICommands) {
 
     if (!argv.command) {
       console.log(
-        `${chalk.bold(
-          chalk.blue("BlockBuild CLI")
-        )}\nUsage: ${chalk.yellowBright(
-          "blockb"
-        )} [command] [arguments] [flags]\n\n${chalk.bold("Commands:")}`
+        `${chalk.bold(chalk.blue("BlockBuild CLI"))}\nUsage: ${chalk.yellowBright("blockb")} [command] [arguments] [flags]\n\n${chalk.bold("Commands:")}`
       );
-      for (const [commandName, command] of Object.entries(commands))
-        command.print(commandName);
+      for (const [commandName, command] of Object.entries(commands)) command.print(commandName);
       return;
     }
 
     const command = commands[argv.command];
-    if (!command)
-      throw errors.CLIError(
-        errors.ErrorCode.CLICommandNotFound,
-        `The command \`${argv.command}\` does not exist.`
-      );
+    if (!command) throw errors.CLIError(errors.ErrorCode.CLICommandNotFound, `The command \`${argv.command}\` does not exist.`);
 
     await command.call(argv);
   } catch (err) {
-    if (err instanceof Error)
-      err = errors.UncaughtError(errors.ErrorCode.UncaughtCLI, err);
+    if (err instanceof Error) err = errors.UncaughtError(errors.ErrorCode.UncaughtCLI, err);
     console.log(`${chalk.bgRed(" FATAL ")} ${err}`);
   }
 }
