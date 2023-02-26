@@ -176,9 +176,13 @@ export async function build(config: types.IConfigEvaluated, buildFlags: any) {
       }
     }
 
-    filter.mainFunction({
-      args
-    });
+    try {
+      await filter.mainFunction({
+        args
+      });
+    } catch (err) {
+      throw errors.RuntimeError(errors.ErrorCode.RuntimeMainFunctionThrew, filterToExecute.id, `Main function threw an error.\n\t${err}`);
+    }
   }
 
   if (!buildFlags.production && !buildFlags.package) {

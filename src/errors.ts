@@ -36,6 +36,7 @@ export const enum ErrorCode {
   RuntimeEvalFilterParseDefOpts = "RT1",
   RuntimeEvalFilterAwaitFilterProm = "RT2",
   RuntimeArgumentsSchemaParseMethodThrew = "RT3",
+  RuntimeMainFunctionThrew = "RT4",
 
   InternalBuildFilterNotFound = "I1",
   InternalConfigReadError = "I2",
