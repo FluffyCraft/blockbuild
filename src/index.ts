@@ -18,6 +18,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 EMAIL: contact@fluffycraft.net
 */
 
+//todo: add `blockb install` and FluffyCraft/blockbuild-modules repo
+
 import * as apiExtensions from "./api-extensions.js";
 import * as types from "./types.js";
 import * as vm from "vm";
