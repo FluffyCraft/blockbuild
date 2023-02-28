@@ -3,9 +3,8 @@ BlockBuild - A Minecraft addon compiler.
 Copyright (C) 2023 FluffyCraft
 
 This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+it under the terms of the GNU General Public License v3.0 as published by
+the Free Software Foundation.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -58,9 +57,11 @@ export interface IConfigEvaluated {
 }
 
 export const ModuleManifest = z.object({
-	dependencies: z.object({}).catchall(z.object({
-		version: z.string().min(1)
-	}))
+	dependencies: z.object({}).catchall(
+		z.object({
+			version: z.string().min(1)
+		})
+	)
 });
 
 export interface IContext {

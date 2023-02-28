@@ -3,9 +3,8 @@ BlockBuild - A Minecraft addon compiler.
 Copyright (C) 2023 FluffyCraft
 
 This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+it under the terms of the GNU General Public License v3.0 as published by
+the Free Software Foundation.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -26,30 +25,30 @@ import * as types from "./types.js";
 import glob from "glob";
 
 enum CompilerMode {
-  DEV,
-  PROD
+	DEV,
+	PROD
 }
 
 export default class StandardLibraryAPI {
-  hasBP;
-  hasRP;
-  zod = z;
-  glob = glob;
-  node = {
-    fs,
-    fsPromises,
-    path
-  };
-  CompilerMode = CompilerMode;
-  compilerMode;
+	hasBP;
+	hasRP;
+	zod = z;
+	glob = glob;
+	node = {
+		fs,
+		fsPromises,
+		path
+	};
+	CompilerMode = CompilerMode;
+	compilerMode;
 
-  constructor(context: types.IContext) {
-    this.hasBP = context.config.packs.includes("BP");
-    this.hasRP = context.config.packs.includes("RP");
-    this.compilerMode = context.buildFlags.production ? CompilerMode.PROD : CompilerMode.DEV;
-  }
+	constructor(context: types.IContext) {
+		this.hasBP = context.config.packs.includes("BP");
+		this.hasRP = context.config.packs.includes("RP");
+		this.compilerMode = context.buildFlags.production ? CompilerMode.PROD : CompilerMode.DEV;
+	}
 
-  log(message: unknown) {
-    console.log(message);
-  }
+	log(message: unknown) {
+		console.log(message);
+	}
 }
