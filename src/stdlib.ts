@@ -23,6 +23,7 @@ import * as fs from "fs";
 import * as fsPromises from "fs/promises";
 import * as path from "path/win32";
 import * as types from "./types.js";
+import glob from "glob";
 
 enum CompilerMode {
   DEV,
@@ -33,6 +34,7 @@ export default class StandardLibraryAPI {
   hasBP;
   hasRP;
   zod = z;
+  glob = glob;
   node = {
     fs,
     fsPromises,

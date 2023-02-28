@@ -3,3 +3,4 @@
 /test
 /.blockbuild
 /blockbuild.config.json
+/blockbuild-module-manifest.json
