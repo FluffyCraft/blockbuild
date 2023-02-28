@@ -34,6 +34,9 @@ import { randomUUID } from "crypto";
 import { execSync } from "child_process";
 import chalk from "chalk";
 import extract from "extract-zip";
+import promptInit from "prompt-sync";
+
+const prompt = promptInit();
 
 interface IParseConfigAsRequiredOptions {
 	srcPath?: string;
@@ -342,20 +345,58 @@ const install = new CLICommand(
 			version = rootManifest.latest;
 		}
 
+		if (thisManifest.dependencies[module]) {
+			const currentVersion = thisManifest.dependencies[module].version;
+			if (currentVersion !== version) {
+				console.log(chalk.bold("Unable to install automatically."));
+				console.log("Trying to install a different version of an already installed module.");
+				if (
+					prompt(
+						`Type "keep" to keep ${module}@${currentVersion} or type anything else to replace ${module}@${currentVersion} with ${module}@${version}. `
+					) === "keep"
+				)
+					throw "User cancelled installation.";
+			}
+		}
+
 		const requestedVersion = requestedModule.find((f: any) => f.path === `${version}.zip`);
 		if (!requestedVersion)
 			throw errors.CLIError(errors.ErrorCode.CLIInstallModuleVersionNotFound, "Version not found.");
 
+		// download version zip
 		await fs.writeFile("tmp", Buffer.from((await (await fetch(requestedVersion.url)).json()).content, "base64"));
 
+		// create modules dir
 		await fs.mkdir(".blockbuild/modules", { recursive: true });
 
+		// extract
 		const extractPath = path.join(process.cwd(), ".blockbuild/modules", module);
 
 		await fs.rm(extractPath, { recursive: true, force: true });
 		await extract("tmp", { dir: extractPath });
 		fs.rm("tmp");
 
+		// install dependencies of module
+		console.log(chalk.bold(`Installing dependencies of ${module}@${version}.`));
+
+		const installedModuleManifest = JSON.parse(
+			await fs.readFile(path.join(".blockbuild/modules", module, "blockbuild-module-manifest.json"), "utf8")
+		);
+
+		for (const [dependencyModule, dependencyData] of Object.entries(installedModuleManifest.dependencies) as [
+			any,
+			any
+		]) {
+			console.log(`Installing dependency ${dependencyModule}@${dependencyData.version}.`);
+			execSync(`blockb install ${dependencyModule} ${dependencyData.version}`, {
+				stdio: [process.stdin, process.stdout]
+			});
+			thisManifest.dependencies[dependencyModule] = { version: dependencyData.version };
+		}
+
+		console.log(chalk.bold(`Installed all dependencies of ${module}@${version}.`));
+
+		// update module manifest with new dependencies
 		thisManifest.dependencies[module] = {
 			version
 		};
@@ -381,8 +422,8 @@ const install = new CLICommand(
 );
 const insdeps = new CLICommand(async _ => {
 	const manifest = await readModuleManifest();
-	for (const [module, data] of (Object.entries(manifest.dependencies) as [any, any])) {
-		console.log(chalk.yellow(`Installing ${module}@${data.version}`));
+	for (const [module, data] of Object.entries(manifest.dependencies) as [any, any]) {
+		console.log(chalk.yellow(`Installing ${module}@${data.version}.`));
 		execSync(`blockb install ${module} ${data.version}`, {
 			stdio: [process.stdin, process.stdout]
 		});
