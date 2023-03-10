@@ -34,6 +34,8 @@ import { execSync } from "child_process";
 import chalk from "chalk";
 import extract from "extract-zip";
 import promptInit from "prompt-sync";
+import archiver from "archiver";
+import { createWriteStream } from "fs";
 
 const prompt = promptInit();
 
@@ -74,6 +76,7 @@ async function evalConfig(options: IParseConfigAsRequiredOptions) {
 					os.homedir(),
 					"AppData/Local/Packages/Microsoft.MinecraftUWP_8wekyb3d8bbwe/LocalState/games/com.mojang"
 			  );
+	config.scripts ||= {};
 
 	return config as types.IConfigEvaluated;
 }
@@ -401,8 +404,6 @@ const install = new CLICommand(
 		};
 
 		await fs.writeFile("blockbuild-module-manifest.json", JSON.stringify(thisManifest, undefined, 4));
-
-		//todo: install the dependencies of the installed module
 	},
 	"Install a module from the FluffyCraft/blockbuild-modules GitHub repo.",
 	[
@@ -428,11 +429,196 @@ const insdeps = new CLICommand(async _ => {
 		});
 	}
 }, "Installs all dependencies found in the module manifest.");
+const run = new CLICommand(
+	async (_, script: string, append: string) => {
+		const scriptContents = (await evalConfig({})).scripts[script];
+		if (!scriptContents)
+			throw errors.CLIError(errors.ErrorCode.CLIRunScriptNotFound, `Script \`${script}\` not found.`);
+		execSync(scriptContents + " " + append, { stdio: [process.stdin, process.stdout], shell: "powershell.exe" });
+	},
+	"Runs a script from the config.",
+	[
+		{
+			name: "script",
+			description: "The script to run.",
+			type: String
+		},
+		{
+			name: "append",
+			description: "A string to append to the script. This is usually used to pass flags or arguments.",
+			defaultValue: "",
+			type: String
+		}
+	]
+);
+const initmod = new CLICommand(
+	async (flags, author: string) => {
+		await Promise.all([fs.mkdir("src"), fs.mkdir("public"), fs.mkdir("test/src/packs", { recursive: true })]);
+
+		const firstPromises: Promise<unknown>[] = [
+			fs.mkdir("dist"),
+			fs.mkdir("test/dist"),
+			fs.mkdir(".blockbuild/modules", { recursive: true }),
+			fs.mkdir("src/filters"),
+			fs.writeFile("src/api-extension.js", `export default function ({ context, std }) {\n\treturn {};\n}`),
+			fs.writeFile(
+				"blockbuild.config.json",
+				JSON.stringify(
+					{
+						packName: "Module Test",
+						packs: ["BP", "RP"],
+						srcPath: "test/src",
+						outPath: "test/dist",
+						scripts: {
+							test: "rm .blockbuild/modules/mymod -Recurse -Force; cp src .blockbuild/modules/mymod -r; blockb build -p"
+						},
+						filters: []
+					},
+					undefined,
+					4
+				)
+			),
+			fs.writeFile(
+				"public/manifest.json",
+				JSON.stringify(
+					{
+						author,
+						latest: "1.0.0"
+					},
+					undefined,
+					4
+				)
+			),
+			fs.writeFile(
+				"package.json",
+				JSON.stringify(
+					{
+						type: "module"
+					},
+					undefined,
+					4
+				)
+			),
+			fs.writeFile(
+				"blockbuild-module-manifest.json",
+				JSON.stringify(
+					{
+						dependencies: []
+					},
+					undefined,
+					4
+				)
+			),
+			fs.writeFile(".gitignore", "/dist\n/test\n/blockbuild.config.json\n/.blockbuild"),
+			fs.mkdir("test/src/packs/BP", { recursive: true }),
+			fs.mkdir("test/src/packs/RP", { recursive: true })
+		];
+
+		await Promise.all(firstPromises);
+
+		const BPUUID = randomUUID();
+		const RPUUID = randomUUID();
+
+		const secondPromises = [
+			fs.writeFile(
+				"test/src/packs/BP/manifest.json",
+				JSON.stringify(
+					{
+						format_version: 2,
+						header: {
+							name: "Module Test",
+							description: "Module test",
+							min_engine_version: [1, 19, 0],
+							uuid: BPUUID,
+							version: [1, 0, 0]
+						},
+						modules: [
+							{
+								type: "data",
+								uuid: randomUUID(),
+								version: [1, 0, 0]
+							}
+						],
+						dependencies: [
+							{
+								uuid: RPUUID,
+								version: [1, 0, 0]
+							}
+						]
+					},
+					undefined,
+					4
+				)
+			),
+			fs.writeFile(
+				"test/src/packs/RP/manifest.json",
+				JSON.stringify(
+					{
+						format_version: 2,
+						header: {
+							name: "Module Test",
+							description: "Module test",
+							min_engine_version: [1, 19, 0],
+							uuid: RPUUID,
+							version: [1, 0, 0]
+						},
+						modules: [
+							{
+								type: "resources",
+								uuid: randomUUID(),
+								version: [1, 0, 0]
+							}
+						],
+						dependencies: [
+							{
+								uuid: BPUUID,
+								version: [1, 0, 0]
+							}
+						]
+					},
+					undefined,
+					4
+				)
+			)
+		];
+
+		await Promise.all(secondPromises);
+	},
+	"Initializes a module.",
+	[
+		{
+			name: "author",
+			description: "The author of your module.",
+			type: String
+		}
+	]
+);
+const packagecommand = new CLICommand(async flags => {
+	await fs.rm("dist", { recursive: true, force: true });
+	await fs.cp("public", "dist", { recursive: true });
+
+	const manifest = JSON.parse(await fs.readFile("public/manifest.json", "utf8"));
+
+	const outputPath = `dist/${manifest.latest}.zip`;
+
+	const output = createWriteStream(outputPath);
+	const archive = archiver("zip");
+
+	archive.pipe(output);
+	archive.directory("src", false);
+
+	await archive.finalize();
+
+	console.log(`Packaged files at \`src\` into archive \`${outputPath}\`.`);
+}, "Package a module.");
 
 await cli({
 	build,
 	init,
+	initmod,
 	insdeps,
 	install,
+	package: packagecommand,
+	run,
 	version
 });

@@ -24,6 +24,8 @@ const ConfigFilterExecuter = z.object({
 	arguments: z.any().optional()
 });
 
+const ConfigScripts = z.object({}).catchall(z.string());
+
 export const Config = z.object({
 	packName: z.string().min(1),
 	srcPath: z.string().optional(),
@@ -42,6 +44,7 @@ export const Config = z.object({
 		.array(z.literal("BP").or(z.literal("RP")))
 		.max(2)
 		.min(1),
+	scripts: ConfigScripts.optional(),
 	filters: z.array(ConfigFilterExecuter)
 });
 
@@ -53,6 +56,7 @@ export interface IConfigEvaluated {
 	outPath: string;
 	comMojangPath: string;
 	packs: ("BP" | "RP")[];
+	scripts: z.infer<typeof ConfigScripts>;
 	filters: z.infer<typeof ConfigFilterExecuter>[];
 }
 

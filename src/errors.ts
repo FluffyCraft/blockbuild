@@ -32,6 +32,7 @@ export const enum ErrorCode {
 	CLIInitNoBPOrRP = "CLI6",
 	CLIInstallModuleNotFound = "CLI7",
 	CLIInstallModuleVersionNotFound = "CLI8",
+	CLIRunScriptNotFound = "CLI9",
 
 	RuntimeArgumentsSchemaNoParseMethod = "RT0",
 	RuntimeEvalFilterParseDefOpts = "RT1",
